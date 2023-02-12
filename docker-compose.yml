@@ -1,0 +1,82 @@
+version: '3'
+services:
+
+  #PHP Service
+  app:
+    image: djpic/php:8.1.14-mysqli
+    restart: unless-stopped
+    depends_on:
+      - db
+    tty: true
+    ports:
+      - "9001:9000"
+      - "806:80"
+      - "8068:8080"
+    environment:
+      SERVICE_NAME: app
+      SERVICE_TAGS: dev
+    working_dir: /var/www
+    volumes:
+      - ./app:/var/www
+
+
+
+
+  #MySQL Service
+  db:
+    image: mysql:8
+    restart: unless-stopped
+    tty: true
+    ports:
+      - "3306:3306"
+    environment:
+      MYSQL_DATABASE: jibimo
+      MYSQL_ROOT_PASSWORD: "12345678"
+      MYSQL_AUTHENTICATION_PLUGIN: mysql_native_password
+      SERVICE_TAGS: dev
+      SERVICE_NAME: mysql
+    volumes:
+      - ./mysql/data:/var/lib/mysql/
+  
+
+  rabbitmq:
+    image: rabbitmq:latest
+    restart: unless-stopped
+    tty: true
+    privileged: true
+    environment:
+      - RABBITMQ_DEFAULT_USER=rabbitmq
+      - RABBITMQ_DEFAULT_PASS=12345678
+    hostname: rabbitmq
+    depends_on:
+      - app
+    volumes:
+      - rabbitmq_data:/var/lib/rabbitmq
+    ports:
+      - "5672:5672"
+      - "15671:15671"
+      - "15672:15672"   
+      
+  phpmyadmin:
+    image: phpmyadmin:5.0.4    
+    restart: unless-stopped
+    tty: true
+    ports:
+      - 8080:80 
+
+  elastic:
+    image: elasticsearch:7.5.1
+    restart: unless-stopped
+    tty: true
+    ports:
+      - "9200:9200"
+      - "9300:9300"
+    environment:
+      cluster.name: 'mix'
+      node.name: 'node-1'
+      discovery.type: 'single-node'
+    volumes:
+      - ./elasticsearch/data:/usr/share/elasticsearch/data  
+ 
+volumes:
+  rabbitmq_data: {}    
